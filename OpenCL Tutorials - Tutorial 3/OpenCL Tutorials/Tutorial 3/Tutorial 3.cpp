@@ -69,12 +69,17 @@ int main(int argc, char **argv) {
 
 		//Part 4 - memory allocation
 		//host - input
-		std::vector<mytype> A { 1,1,1,1,1,1,1,1,1,1 };//allocate 10 elements with an initial value 1 - their sum is 10 so it should be easy to check the results!
+		std::vector<mytype> A { 3,2,5,-1,13,-7,21,-5,0,5 };//allocate 10 elements with an initial value 1 - their sum is 10 so it should be easy to check the results!
+		std::vector<mytype> minVal{ 0 };
+
+		std::cout << "Float = " << minVal << std::endl;
+
+
 
 		//the following part adjusts the length of the input vector so it can be run for a specific workgroup size
 		//if the total input length is divisible by the workgroup size
 		//this makes the code more efficient
-		size_t local_size = 5;
+		size_t local_size = 10;
 
 		size_t padding_size = A.size() % local_size;
 
@@ -110,12 +115,7 @@ int main(int argc, char **argv) {
 		//device - buffers
 		cl::Buffer buffer_A(context, CL_MEM_READ_ONLY, input_size);
 		cl::Buffer buffer_B(context, CL_MEM_READ_WRITE, output_size);
-		cl::Buffer buffer_C(context, CL_MEM_READ_WRITE, output_size);
-		cl::Buffer buffer_D(context, CL_MEM_READ_WRITE, output_size);
-		cl::Buffer buffer_E(context, CL_MEM_READ_WRITE, output_size);
-
-
-		
+			
 
 		//Part 5 - device operations
 
@@ -124,43 +124,53 @@ int main(int argc, char **argv) {
 		queue.enqueueFillBuffer(buffer_B, 0, 0, output_size);//zero B buffer on device memory
 
 		//5.2 Setup and execute all kernels (i.e. device code)
-		cl::Kernel kernel_1 = cl::Kernel(program, "scan_add");
+		//cl::Kernel kernel_1 = cl::Kernel(program, "scan_add");
+		//kernel_1.setArg(0, buffer_A);
+		//kernel_1.setArg(1, buffer_B);
+		//kernel_1.setArg(2, cl::Local(local_size*sizeof(mytype)));//local memory size
+		//kernel_1.setArg(3, cl::Local(local_size * sizeof(mytype)));//local memory size
+
+		////call all kernels in a sequence
+		//cl::Event prof_event;
+		//queue.enqueueNDRangeKernel(kernel_1, cl::NullRange, cl::NDRange(input_elements), cl::NDRange(local_size), NULL, &prof_event);
+
+		////5.3 Copy the result from device to host
+		//queue.enqueueReadBuffer(buffer_B, CL_TRUE, 0, output_size, &B[0]);
+
+		//cl::Kernel kernel_2 = cl::Kernel(program, "block_sum");
+		//kernel_2.setArg(0, buffer_B);
+		//kernel_2.setArg(1, buffer_C);
+		//kernel_2.setArg(2, 5);//local memory size
+		//queue.enqueueNDRangeKernel(kernel_2, cl::NullRange, cl::NDRange(nr_groups), cl::NullRange, NULL, &prof_event);
+		//queue.enqueueReadBuffer(buffer_C, CL_TRUE, 0, output_size, &C[0]);
+
+		//cl::Kernel kernel_3 = cl::Kernel(program, "scan_add_atomic");
+		//kernel_3.setArg(0, buffer_C);
+		//kernel_3.setArg(1, buffer_D);
+		//queue.enqueueNDRangeKernel(kernel_3, cl::NullRange, cl::NDRange(input_elements), cl::NDRange(local_size), NULL, &prof_event);
+		//queue.enqueueReadBuffer(buffer_D, CL_TRUE, 0, output_size, &D[0]);
+
+		//cl::Kernel kernel_4 = cl::Kernel(program, "scan_add_adjust");
+		//kernel_4.setArg(0, buffer_E);
+		//kernel_4.setArg(1, buffer_D);
+		//queue.enqueueNDRangeKernel(kernel_4, cl::NullRange, cl::NDRange(input_elements), cl::NDRange(local_size), NULL, &prof_event);
+		//queue.enqueueReadBuffer(buffer_E, CL_TRUE, 0, output_size, &E[0]);
+
+		// Minimum
+		cl::Kernel kernel_1 = cl::Kernel(program, "min_val");
 		kernel_1.setArg(0, buffer_A);
 		kernel_1.setArg(1, buffer_B);
 		kernel_1.setArg(2, cl::Local(local_size*sizeof(mytype)));//local memory size
-		kernel_1.setArg(3, cl::Local(local_size * sizeof(mytype)));//local memory size
 
-		//call all kernels in a sequence
 		cl::Event prof_event;
 		queue.enqueueNDRangeKernel(kernel_1, cl::NullRange, cl::NDRange(input_elements), cl::NDRange(local_size), NULL, &prof_event);
 
-		//5.3 Copy the result from device to host
+		////5.3 Copy the result from device to host
 		queue.enqueueReadBuffer(buffer_B, CL_TRUE, 0, output_size, &B[0]);
 
-		cl::Kernel kernel_2 = cl::Kernel(program, "block_sum");
-		kernel_2.setArg(0, buffer_B);
-		kernel_2.setArg(1, buffer_C);
-		kernel_2.setArg(2, 5);//local memory size
-		queue.enqueueNDRangeKernel(kernel_2, cl::NullRange, cl::NDRange(nr_groups), cl::NullRange, NULL, &prof_event);
-		queue.enqueueReadBuffer(buffer_C, CL_TRUE, 0, output_size, &C[0]);
-
-		cl::Kernel kernel_3 = cl::Kernel(program, "scan_add_atomic");
-		kernel_3.setArg(0, buffer_C);
-		kernel_3.setArg(1, buffer_D);
-		queue.enqueueNDRangeKernel(kernel_3, cl::NullRange, cl::NDRange(input_elements), cl::NDRange(local_size), NULL, &prof_event);
-		queue.enqueueReadBuffer(buffer_D, CL_TRUE, 0, output_size, &D[0]);
-
-		cl::Kernel kernel_4 = cl::Kernel(program, "scan_add_adjust");
-		kernel_4.setArg(0, buffer_E);
-		kernel_4.setArg(1, buffer_D);
-		queue.enqueueNDRangeKernel(kernel_4, cl::NullRange, cl::NDRange(input_elements), cl::NDRange(local_size), NULL, &prof_event);
-		queue.enqueueReadBuffer(buffer_E, CL_TRUE, 0, output_size, &E[0]);
 
 		std::cout << "A = " << A << std::endl;
 		std::cout << "B = " << B << std::endl;
-		std::cout << "C = " << C << std::endl;
-		std::cout << "D = " << D << std::endl;
-		std::cout << "E = " << E << std::endl;
 
 		std::cout << "Kernel execution time [ns]:"<<prof_event.getProfilingInfo<CL_PROFILING_COMMAND_END>() -
 			prof_event.getProfilingInfo<CL_PROFILING_COMMAND_START>() << std::endl;

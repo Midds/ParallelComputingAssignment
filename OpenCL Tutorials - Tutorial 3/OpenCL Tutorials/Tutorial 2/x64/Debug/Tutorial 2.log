@@ -1,4 +1,17 @@
-﻿  Tutorial 2.vcxproj -> C:\Users\Computing\Documents\GitHub\Parallel-Comp-Workshop\OpenCL Tutorials - Tutorial 3\OpenCL Tutorials\x64\Debug\Tutorial 2.exe
-  Tutorial 2.vcxproj -> C:\Users\Computing\Documents\GitHub\Parallel-Comp-Workshop\OpenCL Tutorials - Tutorial 3\OpenCL Tutorials\x64\Debug\Tutorial 2.pdb (Full PDB)
+﻿  Tutorial 2.cpp
+  lodepng.cpp
+Graphics\lodepng\lodepng.cpp(762): warning C4334: '<<': result of 32-bit shift implicitly converted to 64 bits (was 64-bit shift intended?)
+Graphics\lodepng\lodepng.cpp(1422): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+Graphics\lodepng\lodepng.cpp(1426): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+Graphics\lodepng\lodepng.cpp(1498): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+Graphics\lodepng\lodepng.cpp(3441): warning C4334: '<<': result of 32-bit shift implicitly converted to 64 bits (was 64-bit shift intended?)
+Graphics\lodepng\lodepng.cpp(3455): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+Graphics\lodepng\lodepng.cpp(4262): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+Graphics\lodepng\lodepng.cpp(4310): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+Graphics\lodepng\lodepng.cpp(4390): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+Graphics\lodepng\lodepng.cpp(5329): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
+  Generating Code...
+  Tutorial 2.vcxproj -> C:\Users\Computing\Documents\GitHub\ParallelComputingAssignment\OpenCL Tutorials - Tutorial 3\OpenCL Tutorials\x64\Debug\Tutorial 2.exe
+  Tutorial 2.vcxproj -> C:\Users\Computing\Documents\GitHub\ParallelComputingAssignment\OpenCL Tutorials - Tutorial 3\OpenCL Tutorials\x64\Debug\Tutorial 2.pdb (Full PDB)
   my_kernels2.cl
           1 file(s) copied.
