@@ -1,5 +1,4 @@
 ﻿  Tutorial 3.cpp
-Tutorial 3.cpp(191): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
   Tutorial 3.vcxproj -> C:\Users\Computing\Documents\GitHub\ParallelComputingAssignment\OpenCL Tutorials - Tutorial 3\OpenCL Tutorials\x64\Debug\Tutorial 3.exe
   Tutorial 3.vcxproj -> C:\Users\Computing\Documents\GitHub\ParallelComputingAssignment\OpenCL Tutorials - Tutorial 3\OpenCL Tutorials\x64\Debug\Tutorial 3.pdb (Full PDB)
   my_kernels3.cl

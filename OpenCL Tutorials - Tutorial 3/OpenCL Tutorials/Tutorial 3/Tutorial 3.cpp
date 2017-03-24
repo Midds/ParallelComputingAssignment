@@ -79,7 +79,7 @@ int main(int argc, char **argv) {
 		//the following part adjusts the length of the input vector so it can be run for a specific workgroup size
 		//if the total input length is divisible by the workgroup size
 		//this makes the code more efficient
-		size_t local_size = 10;
+		size_t local_size = 5;
 
 		size_t padding_size = A.size() % local_size;
 
@@ -102,7 +102,7 @@ int main(int argc, char **argv) {
 		std::vector<mytype> B((int)nr_groups);
 		std::vector<mytype> C((int)nr_groups);
 		std::vector<mytype> D((int)nr_groups);
-		std::vector<mytype> E((int)nr_groups);
+		std::vector<mytype> E(10);
 		
 		//std::vector<mytype> H((int)nr_bins);
 		std::vector<mytype> H((int)nr_groups);
@@ -110,7 +110,7 @@ int main(int argc, char **argv) {
 		cl::Buffer buffer_H(context, CL_MEM_READ_WRITE, output_hist_size);
 		queue.enqueueFillBuffer(buffer_H, 0, 0, output_hist_size);
 
-		size_t output_size = B.size()*sizeof(mytype);//size in bytes
+		size_t output_size = E.size()*sizeof(mytype);//size in bytes
 
 		//device - buffers
 		cl::Buffer buffer_A(context, CL_MEM_READ_ONLY, input_size);
@@ -161,54 +161,59 @@ int main(int argc, char **argv) {
 
 
 
-		//// Minimum
+		////// Minimum
 		cl::Kernel kernel_1 = cl::Kernel(program, "min_val");
 		kernel_1.setArg(0, buffer_A);
 		kernel_1.setArg(1, buffer_B);
 		kernel_1.setArg(2, cl::Local(local_size*sizeof(mytype)));//local memory size
 
-		//// Maximum
-		cl::Kernel kernel_2 = cl::Kernel(program, "max_val");
-		kernel_2.setArg(0, buffer_A);
-		kernel_2.setArg(1, buffer_C);
-		kernel_2.setArg(2, cl::Local(local_size*sizeof(mytype)));//local memory size
+		////// Maximum
+		//cl::Kernel kernel_2 = cl::Kernel(program, "max_val");
+		//kernel_2.setArg(0, buffer_A);
+		//kernel_2.setArg(1, buffer_C);
+		//kernel_2.setArg(2, cl::Local(local_size*sizeof(mytype)));//local memory size
 
 		//// Average -- Need to uncomment the line below that divides answer
-		cl::Kernel kernel_3 = cl::Kernel(program, "avg");
-		kernel_3.setArg(0, buffer_A);
-		kernel_3.setArg(1, buffer_D);
-		kernel_3.setArg(2, cl::Local(local_size*sizeof(mytype)));//local memory size
+		//cl::Kernel kernel_3 = cl::Kernel(program, "avg");
+		//kernel_3.setArg(0, buffer_A);
+		//kernel_3.setArg(1, buffer_D);
+		//kernel_3.setArg(2, cl::Local(local_size*sizeof(mytype)));//local memory size
 
 		cl::Event prof_event;
 		queue.enqueueNDRangeKernel(kernel_1, cl::NullRange, cl::NDRange(input_elements), cl::NDRange(local_size), NULL, &prof_event);
 		queue.enqueueReadBuffer(buffer_B, CL_TRUE, 0, output_size, &B[0]); // Copy the result from device to host
-		queue.enqueueNDRangeKernel(kernel_2, cl::NullRange, cl::NDRange(input_elements), cl::NDRange(local_size), NULL, &prof_event);
-		queue.enqueueReadBuffer(buffer_C, CL_TRUE, 0, output_size, &C[0]);
-		queue.enqueueNDRangeKernel(kernel_3, cl::NullRange, cl::NDRange(input_elements), cl::NDRange(local_size), NULL, &prof_event);
-		queue.enqueueReadBuffer(buffer_D, CL_TRUE, 0, output_size, &D[0]);
+		/*queue.enqueueNDRangeKernel(kernel_2, cl::NullRange, cl::NDRange(input_elements), cl::NDRange(local_size), NULL, &prof_event);
+		queue.enqueueReadBuffer(buffer_C, CL_TRUE, 0, output_size, &C[0]);*/
+		//queue.enqueueNDRangeKernel(kernel_3, cl::NullRange, cl::NDRange(input_elements), cl::NDRange(local_size), NULL, &prof_event);
+		//queue.enqueueReadBuffer(buffer_D, CL_TRUE, 0, output_size, &D[0]);
 		
 		// For averaging
-		D[0] = D[0] / input_elements;
+		//D[0] = D[0] / input_elements;
 
-		//// Standard deviation														 
-		cl::Kernel kernel_4 = cl::Kernel(program, "std_dev");
-		kernel_4.setArg(0, buffer_A);
-		kernel_4.setArg(1, buffer_E);
-		kernel_4.setArg(2, D[0]);
-		kernel_4.setArg(3, cl::Local(local_size * sizeof(mytype)));//local memory size
-		queue.enqueueNDRangeKernel(kernel_4, cl::NullRange, cl::NDRange(input_elements), cl::NDRange(local_size), NULL, &prof_event);
-		queue.enqueueReadBuffer(buffer_E, CL_TRUE, 0, output_size, &E[0]);
-
+		// Standard deviation														 
+		//cl::Kernel kernel_4 = cl::Kernel(program, "std_dev");
+		//kernel_4.setArg(0, buffer_A); // input
+		//kernel_4.setArg(1, buffer_E); // output
+		//kernel_4.setArg(2, D[0]); // mean
+		//kernel_4.setArg(3, cl::Local(local_size * sizeof(mytype)));//local memory size
+		//queue.enqueueNDRangeKernel(kernel_4, cl::NullRange, cl::NDRange(input_elements), cl::NDRange(local_size), NULL, &prof_event);
+		//queue.enqueueReadBuffer(buffer_E, CL_TRUE, 0, output_size, &E[0]);
+		//E[0] = (E[0] / (input_elements - 1));
 
 		std::cout << "A = " << A << std::endl;
 		std::cout << "Min = " << B << std::endl;
-		std::cout << "Max = " << C << std::endl;
+		/*std::cout << "Max = " << C << std::endl;
 		std::cout << "Avg = " << D << std::endl;
-		std::cout << "Std dev = " << E << std::endl;
+		std::cout << "Std dev = " << E << std::endl;*/
 
 
 		std::cout << "Kernel execution time [ns]:"<<prof_event.getProfilingInfo<CL_PROFILING_COMMAND_END>() -
 			prof_event.getProfilingInfo<CL_PROFILING_COMMAND_START>() << std::endl;
+
+
+		//string a = "";
+		//getline(cin, a);
+
 
 
 	}

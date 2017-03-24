@@ -19,9 +19,9 @@ __kernel void min_val(__global const int* A, __global int* B, __local int* scrat
 	//we add results from all local groups to the first element of the array
 	//serial operation! but works for any group size
 	//copy the cache to output array
-	if (!lid) {
+	
 		atomic_min(&B[0],scratch[lid]);
-	}
+	
 }
 
 //adjust the values stored in partial scans by adding block sums to corresponding blocks
@@ -50,7 +50,7 @@ __kernel void max_val(__global const int* A, __global int* B, __local int* scrat
 	}
 }
 
-//a simple smoothing kernel averaging values in a local window (radius 1)
+// averaging
 __kernel void avg(__global const int* A, __global int* B, __local int* scratch) {
 	int id = get_global_id(0);
 	int lid = get_local_id(0);
@@ -76,29 +76,35 @@ __kernel void avg(__global const int* A, __global int* B, __local int* scratch) 
 	}
 }
 
-//a simple smoothing kernel averaging values in a local window (radius 1)
+// standard deviation kernal
 __kernel void std_dev(__global const int* A, __global int* B, int mean, __local int* scratch) {
 	int id = get_global_id(0);
 	int lid = get_local_id(0);
 	int N = get_local_size(0);
-	std::vector<mytype> temp(10);
-	//cache all N values from global memory to local memory
-	scratch[lid] = A[id];
 
-	barrier(CLK_LOCAL_MEM_FENCE);//wait for all local threads to finish copying from global to local memory
+	//cache all N values from global memory to local memory
+	//scratch[lid] = A[id];
+	//barrier(CLK_GLOBAL_MEM_FENCE); //wait for all threads to finish copying
 
 	// working out variance
-	scratch[id] = (scratch[id] - mean);
-	temp[id] = (A[id] - mean);
-	barrier(CLK_GLOBAL_MEM_FENCE);
-	temp[id] = temp[id] * temp[id];
+	// subtract mean from all values and square answers
+	//scratch[lid] = scratch[lid] - mean;
+	//barrier(CLK_LOCAL_MEM_FENCE); //wait for all threads to finish copying
+
+	//scratch[lid] = scratch[lid] * scratch[lid];
+	//barrier(CLK_LOCAL_MEM_FENCE); //wait for all threads to finish copying
 
 	//we add results from all local groups to the first element of the array
 	//serial operation! but works for any group size
 	//copy the cache to output array
-	if (!lid) {
-		atomic_add(&B[0],temp[id]);
-	}
+
+	//atomic_add(&B[id],scratch[lid]);
+
+
+	// testing buffer
+
+	B[id] = A[id];
+
 }
 
 //fixed 4 step reduce
