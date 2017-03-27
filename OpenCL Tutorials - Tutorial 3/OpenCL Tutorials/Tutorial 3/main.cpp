@@ -71,6 +71,7 @@ int main(int argc, char **argv) {
 		//host - input
 		std::vector<mytype> A { 5.1, -6.3, 5.2, -1.5, 13.3, -7.6, 21.8, -5.9, 1.4, 9.1, 1.1, 2.4, 14.1, 14.2, 52.1, 16.4, -5.3, 6.7, 8.9, 3.2 };//allocate 10 elements
 		//std::vector<mytype> A{1,1,1,3,-3,-1,1,1,1,1};
+		//std::vector<mytype> A{ 5.1, -6.3, 5.2, -1.5, 13.3, -7.6, 21.8, -5.9, 1.4, 9.1 };//allocate 10 elements
 
 		//the following part adjusts the length of the input vector so it can be run for a specific workgroup size
 		//if the total input length is divisible by the workgroup size
@@ -191,7 +192,7 @@ int main(int argc, char **argv) {
 			queue.enqueueNDRangeKernel(kernel_1, cl::NullRange, cl::NDRange(input_elements), cl::NDRange(local_size), NULL, &prof_event);
 			queue.enqueueReadBuffer(buffer_B, CL_TRUE, 0, workGroups, &B[0]); // Copy the result from device to host
 			A = B;
-			B.resize(2);
+			B.resize(B.size()/2);
 			std::cout << "A = " << A << std::endl;
 			std::cout << "Min = " << B << std::endl;
 			minElements = B.size();

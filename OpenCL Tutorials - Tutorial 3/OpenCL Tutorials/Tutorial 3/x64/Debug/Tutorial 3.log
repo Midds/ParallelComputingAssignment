@@ -1,15 +1,15 @@
 ﻿C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V140\Microsoft.CppBuild.targets(392,5): warning MSB8028: The intermediate directory (x64\Debug\) contains files shared from another project (Tutorial 3.vcxproj).  This can lead to incorrect clean and rebuild behavior.
   main.cpp
-main.cpp(173): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 main.cpp(174): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-main.cpp(197): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-main.cpp(202): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-main.cpp(208): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-main.cpp(210): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-main.cpp(185): warning C4477: 'printf' : format string '%d' requires an argument of type 'int', but variadic argument 1 has type 'unsigned __int64'
-  main.cpp(185): note: consider using '%zd' in the format string
-main.cpp(199): warning C4477: 'printf' : format string '%d' requires an argument of type 'int', but variadic argument 1 has type 'unsigned __int64'
-  main.cpp(199): note: consider using '%zd' in the format string
+main.cpp(175): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+main.cpp(198): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+main.cpp(203): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+main.cpp(209): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+main.cpp(211): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+main.cpp(186): warning C4477: 'printf' : format string '%d' requires an argument of type 'int', but variadic argument 1 has type 'unsigned __int64'
+  main.cpp(186): note: consider using '%zd' in the format string
+main.cpp(200): warning C4477: 'printf' : format string '%d' requires an argument of type 'int', but variadic argument 1 has type 'unsigned __int64'
+  main.cpp(200): note: consider using '%zd' in the format string
   Tutorial 3.vcxproj -> C:\Users\Computing\Documents\GitHub\ParallelComputingAssignment\OpenCL Tutorials - Tutorial 3\OpenCL Tutorials\x64\Debug\13389226 Assignment.exe
   Tutorial 3.vcxproj -> C:\Users\Computing\Documents\GitHub\ParallelComputingAssignment\OpenCL Tutorials - Tutorial 3\OpenCL Tutorials\x64\Debug\13389226 Assignment.pdb (Full PDB)
   my_kernels3.cl
