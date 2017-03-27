@@ -2,9 +2,14 @@
   main.cpp
 main.cpp(173): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
 main.cpp(174): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-main.cpp(193): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-main.cpp(196): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-main.cpp(198): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+main.cpp(197): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+main.cpp(202): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+main.cpp(208): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+main.cpp(210): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+main.cpp(185): warning C4477: 'printf' : format string '%d' requires an argument of type 'int', but variadic argument 1 has type 'unsigned __int64'
+  main.cpp(185): note: consider using '%zd' in the format string
+main.cpp(199): warning C4477: 'printf' : format string '%d' requires an argument of type 'int', but variadic argument 1 has type 'unsigned __int64'
+  main.cpp(199): note: consider using '%zd' in the format string
   Tutorial 3.vcxproj -> C:\Users\Computing\Documents\GitHub\ParallelComputingAssignment\OpenCL Tutorials - Tutorial 3\OpenCL Tutorials\x64\Debug\13389226 Assignment.exe
   Tutorial 3.vcxproj -> C:\Users\Computing\Documents\GitHub\ParallelComputingAssignment\OpenCL Tutorials - Tutorial 3\OpenCL Tutorials\x64\Debug\13389226 Assignment.pdb (Full PDB)
   my_kernels3.cl

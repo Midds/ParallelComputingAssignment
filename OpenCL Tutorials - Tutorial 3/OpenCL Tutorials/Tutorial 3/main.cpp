@@ -69,7 +69,7 @@ int main(int argc, char **argv) {
 
 		//Part 4 - memory allocation
 		//host - input
-		std::vector<mytype> A { 5.1, -6.3, 5.2, -1.5, 13.3, -7.6, 21.8, -5.9, 1.4, 9.1, 1.1, 2.4, 14.1, 14.2, 52.1 };//allocate 10 elements
+		std::vector<mytype> A { 5.1, -6.3, 5.2, -1.5, 13.3, -7.6, 21.8, -5.9, 1.4, 9.1, 1.1, 2.4, 14.1, 14.2, 52.1, 16.4, -5.3, 6.7, 8.9, 3.2 };//allocate 10 elements
 		//std::vector<mytype> A{1,1,1,3,-3,-1,1,1,1,1};
 
 		//the following part adjusts the length of the input vector so it can be run for a specific workgroup size
@@ -172,24 +172,37 @@ int main(int argc, char **argv) {
 		size_t reduct_output_size = nr_groups; // needed to stop the program crashing
 		int workGroups = nr_groups*sizeof(mytype);
 		int minElements = output_size;
-		int finalMin = 0;
+		float finalMin = 0;
 
 
 		cl::Event prof_event;
 		std::cout << "A = " << A << std::endl;
+		cl::Kernel kernel_1 = cl::Kernel(program, "min_val");
+		
+		kernel_1.setArg(0, buffer_A);
+		kernel_1.setArg(1, buffer_B);
+		kernel_1.setArg(2, cl::Local(local_size * sizeof(mytype)));//local memory size
+		printf("B size = %d \n", B.size());
 
 		while (minElements > 2) {
 			////// Minimum
-			cl::Kernel kernel_1 = cl::Kernel(program, "min_val");
-			kernel_1.setArg(0, buffer_A);
-			kernel_1.setArg(1, buffer_B);
-			kernel_1.setArg(2, cl::Local(local_size * sizeof(mytype)));//local memory size
+			
 
 			queue.enqueueNDRangeKernel(kernel_1, cl::NullRange, cl::NDRange(input_elements), cl::NDRange(local_size), NULL, &prof_event);
 			queue.enqueueReadBuffer(buffer_B, CL_TRUE, 0, workGroups, &B[0]); // Copy the result from device to host
 			A = B;
+			B.resize(2);
+			std::cout << "A = " << A << std::endl;
 			std::cout << "Min = " << B << std::endl;
 			minElements = B.size();
+
+			printf("B size = %d \n", B.size());
+			cl::Buffer buffer_A(context, CL_MEM_READ_ONLY, minElements);
+			nr_groups = 2;
+			workGroups = nr_groups * sizeof(mytype);
+
+			if (local_size > B.size())
+				local_size = 2;
 		}
 		if (B[0] > B[1])
 			finalMin = B[1];
