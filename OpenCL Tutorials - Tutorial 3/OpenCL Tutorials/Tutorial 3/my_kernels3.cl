@@ -1,4 +1,4 @@
-﻿//adjust the values stored in partial scans by adding block sums to corresponding blocks
+﻿// minimum
 __kernel void min_val(__global const double* A, __global double* B, __local double* scratch) {
 	int id = get_global_id(0);
 	int lid = get_local_id(0);
@@ -33,8 +33,8 @@ __kernel void min_val(__global const double* A, __global double* B, __local doub
 	
 }
 
-//adjust the values stored in partial scans by adding block sums to corresponding blocks
-__kernel void max_val(__global const int* A, __global int* B, __local int* scratch) {
+// maximum (basically a copy of minimum with just the comparign symbol reversed)
+__kernel void max_val(__global const double* A, __global double* B, __local double* scratch) {
 	int id = get_global_id(0);
 	int lid = get_local_id(0);
 	int N = get_local_size(0);
