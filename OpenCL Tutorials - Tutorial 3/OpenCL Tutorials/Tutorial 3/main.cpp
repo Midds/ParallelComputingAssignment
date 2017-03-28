@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>
+#include <algorithm>
 
 #ifdef __APPLE__
 #include <OpenCL/cl.hpp>
@@ -69,9 +70,9 @@ int main(int argc, char **argv) {
 
 		//Part 4 - memory allocation
 		//host - input
-		std::vector<mytype> A { 5.1, -6.3, 5.2, -1.5, 13.3, -7.6, 21.8, -5.9, 1.4, 9.1, 1.1, 2.4, 14.1, 14.2, 52.1, 16.4, -5.3, 6.7, 8.9, 3.2 };//allocate 10 elements
+		//std::vector<mytype> A { 5.1, -6.3, 5.2, -1.5, 13.3, -7.6, 21.8, -5.9, 1.4, 9.1, 1.1, 2.4, 14.1, 14.2, 52.1, 16.4, -5.3, 6.7, 8.9, 3.2 };//allocate 10 elements
 		//std::vector<mytype> A{1,1,1,3,-3,-1,1,1,1,1};
-		//std::vector<mytype> A{ 5.1, -6.3, 5.2, -1.5, 13.3, -7.6, 21.8, -5.9, 1.4, 9.1 };//allocate 10 elements
+		std::vector<mytype> A{ 5.1, -6.3, 5.2, -1.5, -13.3, -7.6, 21.8, -5.9, 1.4, 9.1, 91 };//allocate 10 elements
 
 		//the following part adjusts the length of the input vector so it can be run for a specific workgroup size
 		//if the total input length is divisible by the workgroup size
@@ -84,7 +85,7 @@ int main(int argc, char **argv) {
 		//insert additional neutral elements (0 for addition) so that the total will not be affected
 		if (padding_size) {
 			//create an extra vector with neutral values
-			std::vector<int> A_ext(local_size-padding_size, 0);
+			std::vector<mytype> A_ext(local_size-padding_size, A[0]);
 			//append that extra vector to our input
 			A.insert(A.end(), A_ext.begin(), A_ext.end());
 		}
@@ -174,6 +175,7 @@ int main(int argc, char **argv) {
 		int workGroups = nr_groups*sizeof(mytype);
 		int minElements = output_size;
 		float finalMin = 0;
+		size_t B_padding_size = B.size() % local_size;
 
 
 		cl::Event prof_event;
@@ -183,32 +185,32 @@ int main(int argc, char **argv) {
 		kernel_1.setArg(0, buffer_A);
 		kernel_1.setArg(1, buffer_B);
 		kernel_1.setArg(2, cl::Local(local_size * sizeof(mytype)));//local memory size
-		printf("B size = %d \n", B.size());
-
-		while (minElements > 2) {
-			////// Minimum
+		//printf("B size = %d \n", B.size());
+		// Minimum
+		while (minElements > local_size) {
 			
-
 			queue.enqueueNDRangeKernel(kernel_1, cl::NullRange, cl::NDRange(input_elements), cl::NDRange(local_size), NULL, &prof_event);
 			queue.enqueueReadBuffer(buffer_B, CL_TRUE, 0, workGroups, &B[0]); // Copy the result from device to host
 			A = B;
-			B.resize(B.size()/2);
-			std::cout << "A = " << A << std::endl;
-			std::cout << "Min = " << B << std::endl;
+			B.resize((nr_groups/2) + 1);
+
+			nr_groups = B.size()/local_size;
+			//std::cout << "A = " << A << std::endl;
+			//std::cout << "Min = " << B << std::endl;
 			minElements = B.size();
 
-			printf("B size = %d \n", B.size());
+			//printf("B size = %d \n", B.size());
 			cl::Buffer buffer_A(context, CL_MEM_READ_ONLY, minElements);
-			nr_groups = 2;
 			workGroups = nr_groups * sizeof(mytype);
-
-			if (local_size > B.size())
-				local_size = 2;
 		}
-		if (B[0] > B[1])
-			finalMin = B[1];
-		else
-			finalMin = B[0];
+		//std::cout << "B after loop = " << B << std::endl;
+		finalMin = B[0];
+
+		// serially loop through the final x values for the min, where x = local_size
+		for (int i = 1; i < B.size(); i++) {
+			if (finalMin > B[i])
+				finalMin = B[i];
+		}
 		std::cout << "Min = " << finalMin << std::endl;
 
 
