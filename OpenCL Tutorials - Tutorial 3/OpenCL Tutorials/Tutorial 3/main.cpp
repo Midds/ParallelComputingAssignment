@@ -71,8 +71,8 @@ int main(int argc, char **argv) {
 		//Part 4 - memory allocation
 		//host - input
 		//std::vector<mytype> A { 5.1, -6.3, 5.2, -1.5, 13.3, -7.6, 21.8, -5.9, 1.4, 9.1, 1.1, 2.4, 14.1, 14.2, 52.1, 16.4, -5.3, 6.7, 8.9, 3.2 };//allocate 10 elements
-		//std::vector<mytype> A{1,1,1,3,-3,-1,1,1,1,1};
-		std::vector<mytype> A{ 5.1, -6.3, -14.9, -1.5, -13.3, -7.6, 21.8, -5.9, 9.1 ,  1.4, - 91 };//allocate 10 elements
+		std::vector<mytype> A{1,1,1,3,-3,-1,1,1,1,1};
+		//std::vector<mytype> A{ 5.1, -6.3, -14.9, -1.5, -13.3, -7.6, 21.8, -5.9, 9.1 ,  1.4, - 91 };//allocate 10 elements
 
 		//the following part adjusts the length of the input vector so it can be run for a specific workgroup size
 		//if the total input length is divisible by the workgroup size
@@ -84,7 +84,7 @@ int main(int argc, char **argv) {
 		//insert additional neutral elements (0 for addition) so that the total will not be affected
 		if (padding_size) {
 			//create an extra vector with neutral values
-			std::vector<mytype> A_ext(local_size-padding_size, A[0]);
+			std::vector<mytype> A_ext(local_size-padding_size, 0);
 			//append that extra vector to our input
 			A.insert(A.end(), A_ext.begin(), A_ext.end());
 		}
@@ -97,8 +97,11 @@ int main(int argc, char **argv) {
 		//host - output
 		//std::vector<mytype> B(input_elements);
 		//changes number of elements to 1
-		std::vector<mytype> B(nr_groups);
-		std::vector<mytype> C(nr_groups);
+		std::vector<mytype> B(nr_groups); // for min val
+		std::vector<mytype> C(nr_groups); // for max val
+		std::vector<mytype> D(nr_groups); // for avg
+		std::vector<mytype> E(nr_groups); // for std dev
+
 		//std::vector<mytype> D((int)nr_groups);
 		//std::vector<mytype> E(10);
 		
@@ -112,9 +115,11 @@ int main(int argc, char **argv) {
 
 		//device - buffers
 		cl::Buffer buffer_A(context, CL_MEM_READ_ONLY, input_size); // input vector
-		cl::Buffer buffer_tempA(context, CL_MEM_READ_ONLY, input_size); // input vector
 		cl::Buffer buffer_B(context, CL_MEM_READ_WRITE, output_size); // for min val
 		cl::Buffer buffer_C(context, CL_MEM_READ_WRITE, output_size); // for max val
+		cl::Buffer buffer_D(context, CL_MEM_READ_WRITE, output_size); // for avg
+		cl::Buffer buffer_E(context, CL_MEM_READ_WRITE, output_size); // for std dev
+
 
 		// device operations
 
@@ -165,9 +170,8 @@ int main(int argc, char **argv) {
 		size_t reduct_output_size = nr_groups; // needed to stop the program crashing //delete
 		int workGroups = nr_groups*sizeof(mytype);
 		int minElements = output_size;
-		float finalMin, finalMax = 0;
+		float finalMin, finalMax, finalAvg, finalStdDev = 0;
 		size_t B_padding_size = B.size() % local_size;
-		std::vector<mytype> tempA = A;
 		std::cout << "A = " << A << std::endl;
 
 		cl::Event prof_event;
@@ -183,6 +187,12 @@ int main(int argc, char **argv) {
 		kernel_2.setArg(0, buffer_A);
 		kernel_2.setArg(1, buffer_C);
 		kernel_2.setArg(2, cl::Local(local_size*sizeof(mytype)));//local memory size
+
+		// Average -- Need to uncomment the line below that divides answer
+		cl::Kernel kernel_3 = cl::Kernel(program, "avg");
+		kernel_3.setArg(0, buffer_A);
+		kernel_3.setArg(1, buffer_D);
+		kernel_3.setArg(2, cl::Local(local_size*sizeof(mytype)));//local memory size
 
 		// Minimum
 		while (minElements > local_size) {
@@ -235,36 +245,83 @@ int main(int argc, char **argv) {
 			if (finalMax < C[i])
 				finalMax = C[i];
 		}
-		std::cout << "Max = " << finalMax << std::endl;
+		std::cout << "Max = " << finalMax << std::endl;	
 
-		std::cout << "Kernel execution time [ns]:" << prof_event.getProfilingInfo<CL_PROFILING_COMMAND_END>() -
-			prof_event.getProfilingInfo<CL_PROFILING_COMMAND_START>() << std::endl;
-		std::cout << GetFullProfilingInfo(prof_event, ProfilingResolution::PROF_US) << endl;
+		workGroups = nr_groups * sizeof(mytype);
+		minElements = output_size;
 
+		// avg
+		while (minElements > local_size) {
+
+			queue.enqueueNDRangeKernel(kernel_3, cl::NullRange, cl::NDRange(input_elements), cl::NDRange(local_size), NULL, &prof_event);
+			queue.enqueueReadBuffer(buffer_D, CL_TRUE, 0, workGroups, &D[0]);
+
+			D.resize(workGroups);
+			workGroups = D.size() / local_size;
+			//std::cout << "A = " << A << std::endl;
+			//std::cout << "Max = " << C << std::endl;
+			minElements = D.size();
+
+			//printf("C size = %d \n", C.size());
+			//workGroups = nr_groups * sizeof(mytype);
+		}
+		//std::cout << "D after loop = " << D << std::endl;
 		
-		//queue.enqueueNDRangeKernel(kernel_3, cl::NullRange, cl::NDRange(input_elements), cl::NDRange(local_size), NULL, &prof_event);
-		//queue.enqueueReadBuffer(buffer_D, CL_TRUE, 0, output_size, &D[0]);
+		finalAvg = D[0];
+
+		// serially loop through the final x values for the min, where x = local_size
+		for (int i = 1; i < D.size(); i++) {
+				finalAvg = finalAvg + D[i];
+		}
+		finalAvg = finalAvg / input_elements;
+		std::cout << "Avg = " << finalAvg << std::endl;
 		
-		// For averaging
-		//D[0] = D[0] / input_elements;
+
 
 		// Standard deviation														 
-		//cl::Kernel kernel_4 = cl::Kernel(program, "std_dev");
-		//kernel_4.setArg(0, buffer_A); // input
-		//kernel_4.setArg(1, buffer_E); // output
-		//kernel_4.setArg(2, D[0]); // mean
-		//kernel_4.setArg(3, cl::Local(local_size * sizeof(mytype)));//local memory size
-		//queue.enqueueNDRangeKernel(kernel_4, cl::NullRange, cl::NDRange(input_elements), cl::NDRange(local_size), NULL, &prof_event);
-		//queue.enqueueReadBuffer(buffer_E, CL_TRUE, 0, output_size, &E[0]);
-		//E[0] = (E[0] / (input_elements - 1));
-
+		cl::Kernel kernel_4 = cl::Kernel(program, "std_dev");
+		kernel_4.setArg(0, buffer_A); // input
+		kernel_4.setArg(1, buffer_E); // output
+		kernel_4.setArg(2, finalAvg); // mean
+		kernel_4.setArg(3, cl::Local(local_size * sizeof(mytype)));//local memory size
 		
-		/*std::cout << "Max = " << C << std::endl;
-		std::cout << "Avg = " << D << std::endl;
-		std::cout << "Std dev = " << E << std::endl;*/
+		workGroups = nr_groups * sizeof(mytype);
+		minElements = output_size;
+
+		// std dev
+		while (minElements > local_size) {
+
+			queue.enqueueNDRangeKernel(kernel_4, cl::NullRange, cl::NDRange(input_elements), cl::NDRange(local_size), NULL, &prof_event);
+			queue.enqueueReadBuffer(buffer_E, CL_TRUE, 0, workGroups, &E[0]);
+
+			E.resize(workGroups);
+			workGroups = E.size() / local_size;
+			//std::cout << "A = " << A << std::endl;
+			//std::cout << "E = " << E << std::endl;
+			minElements = E.size();
+
+			//printf("C size = %d \n", C.size());
+			//workGroups = nr_groups * sizeof(mytype);
+		}
+		//std::cout << "E after loop = " << E << std::endl;
+
+		finalStdDev = E[0];
+
+		// serially loop through the final x values for the min, where x = local_size
+		for (int i = 1; i < E.size(); i++) {
+			finalStdDev = finalStdDev + E[i];
+		}
+	
+		finalStdDev = (finalStdDev / (input_elements - 1));
+		std::cout << "Variance = " << finalStdDev << std::endl;
+
+		finalStdDev = sqrt(finalStdDev);
+		std::cout << "Standard Deviation = " << finalStdDev << std::endl;
 
 
-		
+		std::cout << "\nKernel execution time [ns]:" << prof_event.getProfilingInfo<CL_PROFILING_COMMAND_END>() -
+			prof_event.getProfilingInfo<CL_PROFILING_COMMAND_START>() << std::endl;
+		std::cout << GetFullProfilingInfo(prof_event, ProfilingResolution::PROF_US) << endl;
 
 
 		//string a = "";

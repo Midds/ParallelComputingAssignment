@@ -70,11 +70,13 @@ __kernel void max_val(__global const double* A, __global double* B, __local doub
 }
 
 // averaging
-__kernel void avg(__global const int* A, __global int* B, __local int* scratch) {
+__kernel void avg(__global const double* A, __global double* B, __local double* scratch) {
 	int id = get_global_id(0);
 	int lid = get_local_id(0);
 	int N = get_local_size(0);
+	int g = get_group_id(0);
 
+	int temp = 0;
 	//cache all N values from global memory to local memory
 	scratch[lid] = A[id];
 
@@ -83,47 +85,55 @@ __kernel void avg(__global const int* A, __global int* B, __local int* scratch) 
 	for (int i = 1; i < N; i *= 2) {
 		if (!(lid % (i * 2)) && ((lid + i) < N)) 
 			scratch[lid] += scratch[lid + i];
-
 		barrier(CLK_LOCAL_MEM_FENCE);
 	}
-
+	
+	if (!lid) {
+		B[g] = scratch[lid];
+	}
 	//we add results from all local groups to the first element of the array
 	//serial operation! but works for any group size
 	//copy the cache to output array
-	if (!lid) {
-		atomic_add(&B[0],scratch[lid]);
-	}
+	//if (!lid) {
+	//	atomic_add(&B[0],scratch[lid]);
+	//}
 }
 
 // standard deviation kernal
-__kernel void std_dev(__global const int* A, __global int* B, int mean, __local int* scratch) {
+__kernel void std_dev(__global const double* A, __global double* B, float mean, __local double* scratch) {
 	int id = get_global_id(0);
 	int lid = get_local_id(0);
 	int N = get_local_size(0);
+	int g = get_group_id(0);
 
-	//cache all N values from global memory to local memory
-	//scratch[lid] = A[id];
-	//barrier(CLK_GLOBAL_MEM_FENCE); //wait for all threads to finish copying
+	// cache all N values from global memory to local memory
+	scratch[lid] = A[id];
+	barrier(CLK_GLOBAL_MEM_FENCE); //wait for all threads to finish copying
 
 	// working out variance
-	// subtract mean from all values and square answers
-	//scratch[lid] = scratch[lid] - mean;
-	//barrier(CLK_LOCAL_MEM_FENCE); //wait for all threads to finish copying
+	// subtract mean from all values
+	scratch[lid] = scratch[lid] - mean;
+	barrier(CLK_LOCAL_MEM_FENCE); //wait for all threads to finish copying
 
-	//scratch[lid] = scratch[lid] * scratch[lid];
-	//barrier(CLK_LOCAL_MEM_FENCE); //wait for all threads to finish copying
+	scratch[lid] = scratch[lid] * scratch[lid];
+	barrier(CLK_LOCAL_MEM_FENCE); //wait for all threads to finish copying
 
+	for (int i = 1; i < N; i *= 2) {
+		if (!(lid % (i * 2)) && ((lid + i) < N)) 
+			scratch[lid] += scratch[lid + i];
+		barrier(CLK_LOCAL_MEM_FENCE);
+	}
 	//we add results from all local groups to the first element of the array
 	//serial operation! but works for any group size
 	//copy the cache to output array
 
 	//atomic_add(&B[id],scratch[lid]);
-
-
+	
 	// testing buffer
-
-	B[id] = A[id];
-
+	if (!lid) {
+		B[g] = scratch[lid];
+	}
+	
 }
 
 //fixed 4 step reduce
