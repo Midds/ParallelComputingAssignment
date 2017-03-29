@@ -73,8 +73,9 @@ int main(int argc, char **argv) {
 
 		typedef float mytype;
 		
-		//std::vector<mytype> A {6, 2, 1, 5, 2, 6, 13, 10, 13, 9, 4, -2, 3, 2, 2, 3, 7, 9, 9, 6, 3, 4, 3, 1, 4, 9, 8, 14, 15};
+		//std::vector<mytype> A { 2, 6, 2, 1, 5, 2, 6, 13, 10, 13, 9, 4, -2, 3, 2, 2, 3, 7, 9, 9, 6, 3, 4, 3, 1, 4, 9, 8, 14, 15};
 		std::vector<mytype> A;
+		//std::vector<mytype> A { 6, 2, 1, 3, 2, 1, -4, 4, 1, 1, 3, 5, -1, 4, -9, 4, 9, 8, 14, 15 };
 
 		ifstream myReadFile;
 		myReadFile.open("../../temp_lincolnshire_datasets/temp_lincolnshire_short.txt");
@@ -207,6 +208,7 @@ int main(int argc, char **argv) {
 		float finalMin, finalMax, finalAvg, finalStdDev = 0;
 		float b_padding = 0;
 		std::vector<mytype> tempB(nr_groups); // for min val
+		std::vector<mytype> tempA = A;
 
 		//std::cout << "A = " << A << std::endl;
 
@@ -241,7 +243,7 @@ int main(int argc, char **argv) {
 		kernel_3.setArg(1, buffer_D);
 		kernel_3.setArg(2, cl::Local(local_size*sizeof(mytype)));//local memory size
 		
-		std::cout << "B size before = " << B.size() << std::endl;
+		//std::cout << "B size before = " << B.size() << std::endl;
 
 		// Minimum
 		while (minElements > local_size) {
@@ -265,11 +267,11 @@ int main(int argc, char **argv) {
 
 			nr_groups = (B.size() / local_size);
 
-			std::cout << "" << std::endl;
+			//std::cout << "" << std::endl;
 			//std::cout << "B = " << B << std::endl;
-			std::cout << "B size= " << B.size() << std::endl;
-			std::cout << "NR_groups = " << nr_groups << std::endl;
-			std::cout << std::endl;
+			//std::cout << "B size= " << B.size() << std::endl;
+			//std::cout << "NR_groups = " << nr_groups << std::endl;
+			//std::cout << std::endl;
 
 			//std::cout << "A = " << A << std::endl;
 			minElements = B.size();
@@ -282,7 +284,7 @@ int main(int argc, char **argv) {
 			//printf("B size = %d \n", B.size());
 			//workGroups = nr_groups * sizeof(mytype);
 		}
-		std::cout << "B after loop = " << B << std::endl;
+		//std::cout << "B after loop = " << B << std::endl;
 		
 		finalMin = B[0];
 
@@ -296,13 +298,25 @@ int main(int argc, char **argv) {
 		nr_groups = input_elements / local_size;
 		minElements = output_size;
 
+		A = tempA;
+
 		// Maximum
 		while (minElements > local_size) {
+			queue.enqueueWriteBuffer(buffer_A, CL_TRUE, 0, input_size, &A[0]);
 
 			queue.enqueueNDRangeKernel(kernel_2, cl::NullRange, cl::NDRange(input_elements), cl::NDRange(local_size), NULL, &prof_event);
 			queue.enqueueReadBuffer(buffer_C, CL_TRUE, 0, workGroups, &C[0]);
 
 			C.resize(nr_groups);
+
+			b_padding = C.size() % local_size;
+			if (b_padding) {
+				//create an extra vector with neutral values
+				std::vector<mytype> C_ext((local_size - b_padding), 0);
+				//append that extra vector to our input
+				C.insert(C.end(), C_ext.begin(), C_ext.end());
+			}
+
 			nr_groups = C.size() / local_size;
 			//std::cout << "A = " << A << std::endl;
 			//std::cout << "Max = " << C << std::endl;
@@ -310,6 +324,7 @@ int main(int argc, char **argv) {
 
 			//printf("C size = %d \n", C.size());
 			//workGroups = nr_groups * sizeof(mytype);
+			A = C;
 		}
 		//std::cout << "C after loop = " << C << std::endl;
 		finalMax = C[0];
@@ -323,25 +338,34 @@ int main(int argc, char **argv) {
 		
 		nr_groups = input_elements / local_size;
 		minElements = output_size;
+		A = tempA;
 
 		//std::cout << "D before = " << D << std::endl;
 
 		// avg
 		while (minElements > local_size) {
+			queue.enqueueWriteBuffer(buffer_A, CL_TRUE, 0, input_size, &A[0]);
 
 			queue.enqueueNDRangeKernel(kernel_3, cl::NullRange, cl::NDRange(input_elements), cl::NDRange(local_size), NULL, &prof_event);
 			queue.enqueueReadBuffer(buffer_D, CL_TRUE, 0, workGroups, &D[0]);
 
 			D.resize(nr_groups);
+
+			b_padding = D.size() % local_size;
+			if (b_padding) {
+				//create an extra vector with neutral values
+				std::vector<mytype> D_ext((local_size - b_padding), 0);
+				//append that extra vector to our input
+				D.insert(D.end(), D_ext.begin(), D_ext.end());
+			}
+
 			nr_groups = D.size() / local_size;
-			//std::cout << "A = " << A << std::endl;
-			//std::cout << "D = " << D << std::endl;
+
 			minElements = D.size();
 
-			//printf("C size = %d \n", C.size());
-			//workGroups = nr_groups * sizeof(mytype);
+			A = D;
 		}
-		std::cout << "D after loop = " << D << std::endl;
+		//std::cout << "D after loop = " << D << std::endl;
 		
 		finalAvg = D[0];
 
@@ -364,19 +388,30 @@ int main(int argc, char **argv) {
 		
 		nr_groups = input_elements / local_size;
 		minElements = output_size;
+		A = tempA;
 
 
 		// std dev
 		while (minElements > local_size) {
+			queue.enqueueWriteBuffer(buffer_A, CL_TRUE, 0, input_size, &A[0]);
 
 			queue.enqueueNDRangeKernel(kernel_4, cl::NullRange, cl::NDRange(input_elements), cl::NDRange(local_size), NULL, &prof_event);
 			queue.enqueueReadBuffer(buffer_E, CL_TRUE, 0, workGroups, &E[0]);
 
 			E.resize(nr_groups);
+
+			//b_padding = E.size() % local_size;
+			//if (b_padding) {
+			//	//create an extra vector with neutral values
+			//	std::vector<mytype> E_ext((local_size - b_padding), 0);
+			//	//append that extra vector to our input
+			//	E.insert(E.end(), E_ext.begin(), E_ext.end());
+			//}
+
 			nr_groups = E.size() / local_size;
 			//std::cout << "A = " << A << std::endl;
 			//std::cout << "E = " << E << std::endl;
-			minElements = E.size();
+			minElements = 1;
 
 			//printf("C size = %d \n", C.size());
 			//workGroups = nr_groups * sizeof(mytype);
@@ -389,7 +424,7 @@ int main(int argc, char **argv) {
 		for (int i = 1; i < E.size(); i++) {
 			finalStdDev = finalStdDev + E[i];
 		}
-	
+
 		finalStdDev = (finalStdDev / (input_elements - 1));
 		std::cout << "Variance = " << finalStdDev << std::endl;
 
@@ -399,13 +434,6 @@ int main(int argc, char **argv) {
 		std::cout << "\nKernel execution time [ns]:" << prof_event.getProfilingInfo<CL_PROFILING_COMMAND_END>() -
 			prof_event.getProfilingInfo<CL_PROFILING_COMMAND_START>() << std::endl;
 		std::cout << GetFullProfilingInfo(prof_event, ProfilingResolution::PROF_US) << endl;
-
-
-		//string a = "";
-		//getline(cin, a);
-
-
-
 	}
 	catch (cl::Error err) {
 		std::cerr << "ERROR: " << err.what() << ", " << getErrorString(err.err()) << std::endl;
