@@ -72,6 +72,8 @@ int main(int argc, char **argv) {
 		}
 
 		typedef float mytype;
+		
+		//std::vector<mytype> A {6, 2, 1, 5, 2, 6, 13, 10, 13, 9, 4, -2, 3, 2, 2, 3, 7, 9, 9, 6, 3, 4, 3, 1, 4, 9, 8, 14, 15};
 		std::vector<mytype> A;
 
 		ifstream myReadFile;
@@ -79,7 +81,6 @@ int main(int argc, char **argv) {
 		string output;
 		string file_contents;
 		string sub;
-		string test;
 
 		if (myReadFile.is_open()) {
 			while (!myReadFile.eof()) {
@@ -87,7 +88,7 @@ int main(int argc, char **argv) {
 				{
 					sub = output.substr(output.find(" ") + 17);
 					
-					std::vector<mytype> A_ext(std::stof(sub));
+					std::vector<mytype> A_ext(1, std::stof(sub));
 					A.insert(A.end(), A_ext.begin(), A_ext.end());
 					
 					file_contents += sub;
@@ -97,14 +98,8 @@ int main(int argc, char **argv) {
 		}
 
 		myReadFile.close();
-		cout << file_contents << endl;
+		////cout << file_contents << endl;
 		
-		
-		//sub = file_contents.substr(file_contents.find(" ") + 17);
-		//sub = sub.substr(file_contents.find(" ") + 17);
-		//sub = file_contents.substr(file_contents.find(" ") + 17);
-
-		//cout << sub << endl;
 		//Part 4 - memory allocation
 		//host - input
 		//std::vector<mytype> A { 5.1, -6.3, 5.2, -1.5, 13.3, -7.6, 21.8, -5.9, 1.4, 9.1, 1.1, 2.4, 14.1, 14.2, 52.1, 16.4, -5.3, 6.7, 8.9, 3.2 };//allocate 10 elements
@@ -207,11 +202,24 @@ int main(int argc, char **argv) {
 		//kernel_3.setArg(2, cl::Local(local_size*sizeof(mytype)));//local memory size
 		
 		size_t reduct_output_size = nr_groups; // needed to stop the program crashing //delete
-		int workGroups = nr_groups*sizeof(mytype);
-		int minElements = output_size;
+		size_t workGroups = nr_groups*sizeof(mytype);
+		float minElements = output_size;
 		float finalMin, finalMax, finalAvg, finalStdDev = 0;
-		size_t B_padding_size = B.size() % local_size;
-		std::cout << "A = " << A << std::endl;
+		float b_padding = 0;
+		std::vector<mytype> tempB(nr_groups); // for min val
+
+		//std::cout << "A = " << A << std::endl;
+
+		/*std::cout << "A[0] = " << A[0] << std::endl;
+		std::cout << "A size = " << A.size() << std::endl;
+		std::cout << "A[size-1] = " << A[A.size()-1] << std::endl;
+		std::cout << "A[size-2] = " << A[A.size() - 2] << std::endl;
+		std::cout << "A[size-3] = " << A[A.size() - 3] << std::endl;
+		std::cout << "A[size-4] = " << A[A.size() - 4] << std::endl;
+		std::cout << "output size = " << output_size << std::endl;
+		std::cout << "nr groups = " << nr_groups << std::endl;*/
+		//std::cout << "-25 = " << A[3292] << std::endl;
+
 
 		cl::Event prof_event;
 		
@@ -232,23 +240,50 @@ int main(int argc, char **argv) {
 		kernel_3.setArg(0, buffer_A);
 		kernel_3.setArg(1, buffer_D);
 		kernel_3.setArg(2, cl::Local(local_size*sizeof(mytype)));//local memory size
+		
+		std::cout << "B size before = " << B.size() << std::endl;
 
 		// Minimum
 		while (minElements > local_size) {
-			
+			//std::cout << "Sending A" << A << std::endl;
+			//std::cout << "Sending B" << B << std::endl;
+			queue.enqueueWriteBuffer(buffer_A, CL_TRUE, 0, input_size, &A[0]);
+
 			queue.enqueueNDRangeKernel(kernel_1, cl::NullRange, cl::NDRange(input_elements), cl::NDRange(local_size), NULL, &prof_event);
 			queue.enqueueReadBuffer(buffer_B, CL_TRUE, 0, workGroups, &B[0]); // Copy the result from device to host
+			//std::cout << "Immediate B = " << B << std::endl;
 
 			B.resize(nr_groups);
-			nr_groups = B.size()/local_size;
-			//std::cout << "A = " << A << std::endl;
+
+			b_padding = B.size() % local_size;
+			if (b_padding) {
+				//create an extra vector with neutral values
+				std::vector<mytype> B_ext((local_size - b_padding), 0);
+				//append that extra vector to our input
+				B.insert(B.end(), B_ext.begin(), B_ext.end());
+			}
+
+			nr_groups = (B.size() / local_size);
+
+			std::cout << "" << std::endl;
 			//std::cout << "B = " << B << std::endl;
+			std::cout << "B size= " << B.size() << std::endl;
+			std::cout << "NR_groups = " << nr_groups << std::endl;
+			std::cout << std::endl;
+
+			//std::cout << "A = " << A << std::endl;
 			minElements = B.size();
+					
+			//std::cout << "A = " << A << std::endl;
+
+			A = B;
+			//std::cout << "A after = " << A << std::endl;
 
 			//printf("B size = %d \n", B.size());
 			//workGroups = nr_groups * sizeof(mytype);
 		}
-		//std::cout << "B after loop = " << B << std::endl;
+		std::cout << "B after loop = " << B << std::endl;
+		
 		finalMin = B[0];
 
 		// serially loop through the final x values for the min, where x = local_size
@@ -289,7 +324,7 @@ int main(int argc, char **argv) {
 		nr_groups = input_elements / local_size;
 		minElements = output_size;
 
-		std::cout << "D before = " << D << std::endl;
+		//std::cout << "D before = " << D << std::endl;
 
 		// avg
 		while (minElements > local_size) {
@@ -299,8 +334,8 @@ int main(int argc, char **argv) {
 
 			D.resize(nr_groups);
 			nr_groups = D.size() / local_size;
-			std::cout << "A = " << A << std::endl;
-			std::cout << "D = " << D << std::endl;
+			//std::cout << "A = " << A << std::endl;
+			//std::cout << "D = " << D << std::endl;
 			minElements = D.size();
 
 			//printf("C size = %d \n", C.size());
