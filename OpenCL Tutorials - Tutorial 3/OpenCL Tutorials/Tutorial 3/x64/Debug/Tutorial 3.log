@@ -1,29 +1,15 @@
 ﻿C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V140\Microsoft.CppBuild.targets(392,5): warning MSB8028: The intermediate directory (x64\Debug\) contains files shared from another project (Tutorial 3.vcxproj).  This can lead to incorrect clean and rebuild behavior.
   main.cpp
-main.cpp(171): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-main.cpp(172): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-main.cpp(204): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-main.cpp(207): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-main.cpp(213): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-main.cpp(218): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-main.cpp(222): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-main.cpp(223): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-main.cpp(232): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-main.cpp(235): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-main.cpp(241): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-main.cpp(246): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-main.cpp(250): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-main.cpp(251): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-main.cpp(260): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-main.cpp(263): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-main.cpp(270): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-main.cpp(274): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-main.cpp(288): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-main.cpp(289): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-main.cpp(298): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-main.cpp(301): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
-main.cpp(308): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-main.cpp(312): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+main.cpp(90): warning C4244: 'argument': conversion from 'float' to 'unsigned __int64', possible loss of data
+main.cpp(210): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+main.cpp(211): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+main.cpp(246): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+main.cpp(262): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+main.cpp(274): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+main.cpp(290): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+main.cpp(304): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+main.cpp(331): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+main.cpp(344): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
   Tutorial 3.vcxproj -> C:\Users\Computing\Documents\GitHub\ParallelComputingAssignment\OpenCL Tutorials - Tutorial 3\OpenCL Tutorials\x64\Debug\13389226 Assignment.exe
   Tutorial 3.vcxproj -> C:\Users\Computing\Documents\GitHub\ParallelComputingAssignment\OpenCL Tutorials - Tutorial 3\OpenCL Tutorials\x64\Debug\13389226 Assignment.pdb (Full PDB)
   my_kernels3.cl
