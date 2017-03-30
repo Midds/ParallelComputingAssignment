@@ -91,12 +91,6 @@ __kernel void avg(__global const float* A, __global float* B, __local float* scr
 	if (!lid) {
 		B[g] = scratch[lid];
 	}
-	//we add results from all local groups to the first element of the array
-	//serial operation! but works for any group size
-	//copy the cache to output array
-	//if (!lid) {
-	//	atomic_add(&B[0],scratch[lid]);
-	//}
 }
 
 // standard deviation kernal

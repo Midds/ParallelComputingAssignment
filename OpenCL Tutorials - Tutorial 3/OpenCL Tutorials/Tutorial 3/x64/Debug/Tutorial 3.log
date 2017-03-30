@@ -1,18 +1,18 @@
 ﻿C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V140\Microsoft.CppBuild.targets(392,5): warning MSB8028: The intermediate directory (x64\Debug\) contains files shared from another project (Tutorial 3.vcxproj).  This can lead to incorrect clean and rebuild behavior.
   main.cpp
-main.cpp(207): warning C4244: 'initializing': conversion from 'std::size_t' to 'float', possible loss of data
-main.cpp(260): warning C4244: '=': conversion from 'unsigned __int64' to 'float', possible loss of data
-main.cpp(263): warning C4244: 'argument': conversion from 'float' to 'unsigned __int64', possible loss of data
-main.cpp(277): warning C4244: '=': conversion from 'unsigned __int64' to 'float', possible loss of data
-main.cpp(299): warning C4244: '=': conversion from 'std::size_t' to 'float', possible loss of data
-main.cpp(312): warning C4244: '=': conversion from 'unsigned __int64' to 'float', possible loss of data
-main.cpp(315): warning C4244: 'argument': conversion from 'float' to 'unsigned __int64', possible loss of data
-main.cpp(323): warning C4244: '=': conversion from 'unsigned __int64' to 'float', possible loss of data
-main.cpp(340): warning C4244: '=': conversion from 'std::size_t' to 'float', possible loss of data
-main.cpp(354): warning C4244: '=': conversion from 'unsigned __int64' to 'float', possible loss of data
-main.cpp(357): warning C4244: 'argument': conversion from 'float' to 'unsigned __int64', possible loss of data
-main.cpp(364): warning C4244: '=': conversion from 'unsigned __int64' to 'float', possible loss of data
-main.cpp(390): warning C4244: '=': conversion from 'std::size_t' to 'float', possible loss of data
+main.cpp(149): warning C4244: 'initializing': conversion from 'std::size_t' to 'float', possible loss of data
+main.cpp(186): warning C4244: '=': conversion from 'unsigned __int64' to 'float', possible loss of data
+main.cpp(202): warning C4244: '=': conversion from 'std::size_t' to 'float', possible loss of data
+main.cpp(216): warning C4244: '=': conversion from 'unsigned __int64' to 'float', possible loss of data
+main.cpp(234): warning C4244: '=': conversion from 'std::size_t' to 'float', possible loss of data
+main.cpp(248): warning C4244: '=': conversion from 'unsigned __int64' to 'float', possible loss of data
+main.cpp(251): warning C4244: 'argument': conversion from 'float' to 'unsigned __int64', possible loss of data
+main.cpp(259): warning C4244: '=': conversion from 'unsigned __int64' to 'float', possible loss of data
+main.cpp(382): warning C4244: '=': conversion from 'std::size_t' to 'float', possible loss of data
+main.cpp(415): warning C4244: '=': conversion from 'std::size_t' to 'float', possible loss of data
+main.cpp(435): warning C4244: '=': conversion from 'unsigned __int64' to 'float', possible loss of data
+main.cpp(438): warning C4244: 'argument': conversion from 'float' to 'unsigned __int64', possible loss of data
+main.cpp(446): warning C4244: '=': conversion from 'unsigned __int64' to 'float', possible loss of data
   Tutorial 3.vcxproj -> C:\Users\Computing\Documents\GitHub\ParallelComputingAssignment\OpenCL Tutorials - Tutorial 3\OpenCL Tutorials\x64\Debug\13389226 Assignment.exe
   Tutorial 3.vcxproj -> C:\Users\Computing\Documents\GitHub\ParallelComputingAssignment\OpenCL Tutorials - Tutorial 3\OpenCL Tutorials\x64\Debug\13389226 Assignment.pdb (Full PDB)
   my_kernels3.cl
