@@ -72,12 +72,11 @@ int main(int argc, char **argv) {
 		}
 
 		typedef float mytype;
-		//std::vector<mytype> A { 2,6,2,1,5,2,6,13,10,13,9,4,-2,3,2,2,3,7,9,9,6,3,4,3,1,4,9,8,14,15 };
 
 		std::vector<mytype> A;
 		// reading in the values from file
 		ifstream file;
-		file.open("../../temp_lincolnshire_datasets/temp_lincolnshire.txt"); // open io stream
+		file.open("../../temp_lincolnshire_datasets/temp_lincolnshire_short.txt"); // open io stream
 		string output;
 		string sub;
 
@@ -96,12 +95,14 @@ int main(int argc, char **argv) {
 
 		file.close(); // close io stream
 		
+		std::cout << "File read in complete...\n" << std::endl;
+
 		//host - input
 
 		//the following part adjusts the length of the input vector so it can be run for a specific workgroup size
 		//if the total input length is divisible by the workgroup size
 		//this makes the code more efficient
-		size_t local_size = 5;
+		size_t local_size = 21;
 		size_t padding_size = A.size() % local_size;
 		size_t origin_input_elements = A.size(); // need the original size before padding is added
 
@@ -134,7 +135,6 @@ int main(int argc, char **argv) {
 		cl::Buffer buffer_E(context, CL_MEM_READ_WRITE, output_size); // for std dev
 		cl::Buffer buffer_F(context, CL_MEM_READ_WRITE, output_size); // for std dev
 
-
 		// device - operations
 		// copy array A to and initialise other arrays on device memory
 		queue.enqueueWriteBuffer(buffer_A, CL_TRUE, 0, input_size, &A[0]);
@@ -150,9 +150,7 @@ int main(int argc, char **argv) {
 		float finalMin, finalMax, finalAvg, finalStdDev = 0;
 		float b_padding = 0;
 		std::vector<mytype> tempB(nr_groups); // for min val
-		std::vector<mytype> tempA = A;
-
-		cl::Event prof_event;
+		std::vector<mytype> originA = A; // needed to reset A after each loop
 		
 		// Minimum
 		cl::Kernel kernel_1 = cl::Kernel(program, "min_val");		
@@ -172,9 +170,17 @@ int main(int argc, char **argv) {
 		kernel_3.setArg(1, buffer_D);
 		kernel_3.setArg(2, cl::Local(local_size*sizeof(mytype)));//local memory size
 		
+		// create profiling event and some variables to hold the execution times and memory transfer times for each loop iteration
+		cl::Event prof_event;
+		double kernalTime = 0;
+		string memoryTransferTime;
+		string subs;
+		int queued = 0, submitted = 0, executed = 0;
+
 		// Minimum
 		while (minElements > local_size) {
 			queue.enqueueWriteBuffer(buffer_A, CL_TRUE, 0, input_size, &A[0]);
+			// launching kernal with profiling event
 			queue.enqueueNDRangeKernel(kernel_1, cl::NullRange, cl::NDRange(input_elements), cl::NDRange(local_size), NULL, &prof_event);
 			queue.enqueueReadBuffer(buffer_B, CL_TRUE, 0, workGroups, &B[0]); // Copy the result from device to host
 
@@ -186,6 +192,13 @@ int main(int argc, char **argv) {
 			minElements = B.size();
 			// Finally copy the final vector B into A - ready to be sent to the device in the next iteration
 			A = B;
+
+			// Add the kernal execution time for the last kernal execution to the total time so far
+			kernalTime = kernalTime + (prof_event.getProfilingInfo<CL_PROFILING_COMMAND_END>() -
+				prof_event.getProfilingInfo<CL_PROFILING_COMMAND_START>());
+			// get memory transfer time for each loop
+			memoryTransferTime = GetFullProfilingInfo(prof_event, ProfilingResolution::PROF_US);
+			std::cout << memoryTransferTime << std::endl;
 		}
 		// store the min in finalMin
 		finalMin = B[0];
@@ -195,12 +208,16 @@ int main(int argc, char **argv) {
 			if (finalMin > B[i])
 				finalMin = B[i];
 		}
-		std::cout << "Min = " << finalMin << std::endl;
 		
+		std::cout << "Minimum Kernel - execution time [Microseconds]: " << kernalTime / 1000 << std::endl;
+		std::cout << "Min = " << finalMin << "\n" << std::endl;
+
 		// reset some variables needed for the next kernal
 		nr_groups = input_elements / local_size;
 		minElements = output_size;
-		A = tempA;
+		A = originA;
+		kernalTime = 0;
+		queued = 0, submitted = 0, executed = 0;
 
 		// Maximum
 		while (minElements > local_size) {
@@ -216,6 +233,13 @@ int main(int argc, char **argv) {
 			minElements = C.size();
 			// Finally copy the final vector C into A - ready to be sent to the device in the next iteration
 			A = C;
+
+			// Add the kernal execution time for the last kernal execution to the total time so far
+			kernalTime = kernalTime + (prof_event.getProfilingInfo<CL_PROFILING_COMMAND_END>() -
+				prof_event.getProfilingInfo<CL_PROFILING_COMMAND_START>());
+			// get memory transfer time for each loop
+			memoryTransferTime = GetFullProfilingInfo(prof_event, ProfilingResolution::PROF_US);
+			std::cout << memoryTransferTime << std::endl;
 		}
 		
 		// store the max in finalMax
@@ -227,12 +251,15 @@ int main(int argc, char **argv) {
 			if (finalMax < C[i])
 				finalMax = C[i];
 		}
-		std::cout << "Max = " << finalMax << std::endl;	
 		
+		std::cout << "Maximum Kernel - execution time [Microseconds]: " << kernalTime / 1000 << std::endl;
+		std::cout << "Max = " << finalMax << "\n" << std::endl;
+
 		// reset some variables needed for the next kernal
 		nr_groups = input_elements / local_size;
 		minElements = output_size;
-		A = tempA;
+		A = originA;
+		kernalTime = 0;
 
 		// Average
 		while (minElements > local_size) {
@@ -259,6 +286,13 @@ int main(int argc, char **argv) {
 			minElements = D.size();
 			// Finally copy the final vector D into A - ready to be sent to the device in the next iteration
 			A = D;
+
+			// Add the kernal execution time for the last kernal execution to the total time so far
+			kernalTime = kernalTime + (prof_event.getProfilingInfo<CL_PROFILING_COMMAND_END>() -
+				prof_event.getProfilingInfo<CL_PROFILING_COMMAND_START>());
+			// get memory transfer time for each loop
+			memoryTransferTime = GetFullProfilingInfo(prof_event, ProfilingResolution::PROF_US);
+			std::cout << memoryTransferTime << std::endl;
 		}
 		
 		// store the average in finalAvg
@@ -272,103 +306,10 @@ int main(int argc, char **argv) {
 
 		// divide the final sum by the original number of input elements to get the final average
 		// important to use origin_input_elements not input_elements so the padding won't effect the result
-		std::cout << "Sum = " << finalAvg << std::endl;
 		finalAvg = finalAvg / origin_input_elements;
-		std::cout << "Avg = " << finalAvg << std::endl;
 
-		//// Standard deviation														 
-		//cl::Kernel kernel_4 = cl::Kernel(program, "std_dev");
-		//kernel_4.setArg(0, buffer_A); // input
-		//kernel_4.setArg(1, buffer_E); // output
-		//kernel_4.setArg(2, finalAvg); // mean
-		//kernel_4.setArg(3, cl::Local(local_size * sizeof(mytype)));//local memory size
-		//
-		//// reset some variables needed for the next kernal
-		//nr_groups = input_elements / local_size;
-		//minElements = output_size;
-		//A = tempA;
-
-		//// std dev
-		//	queue.enqueueWriteBuffer(buffer_A, CL_TRUE, 0, input_size, &A[0]);
-		//	queue.enqueueNDRangeKernel(kernel_4, cl::NullRange, cl::NDRange(input_elements), cl::NDRange(local_size), NULL, &prof_event);
-		//	queue.enqueueReadBuffer(buffer_E, CL_TRUE, 0, workGroups, &E[0]);
-
-		//	//E.resize(nr_groups);
-
-		//	//b_padding = E.size() % local_size;
-		//	//if (b_padding) {
-		//	//	//create an extra vector with neutral values
-		//	//	std::vector<mytype> E_ext((local_size - b_padding), 0);
-		//	//	//append that extra vector to our input
-		//	//	E.insert(E.end(), E_ext.begin(), E_ext.end());
-		//	//}
-
-		//	//nr_groups = E.size() / local_size;
-		//	//std::cout << "A = " << A << std::endl;
-		//	//std::cout << "E = " << E << std::endl;
-		//	//minElements = 1;
-
-		//
-
-		//	// Average
-		//	// reset some variables needed for the next kernal
-		//	nr_groups = input_elements / local_size;
-		//	minElements = output_size;
-		//	A = E;
-		//	//std::cout << "A = " << A << std::endl;
-		//	std::cout << "A b4 loop = " << A << std::endl;
-
-		//	// Average -- Need to uncomment the line below that divides answer
-		//	cl::Kernel kernel_5 = cl::Kernel(program, "avg");
-		//	kernel_5.setArg(0, buffer_A);
-		//	kernel_5.setArg(1, buffer_F);
-		//	kernel_5.setArg(2, cl::Local(local_size * sizeof(mytype)));//local memory size
-
-		//	while (minElements > local_size) {
-		//		queue.enqueueWriteBuffer(buffer_A, CL_TRUE, 0, input_size, &A[0]);
-
-		//		queue.enqueueNDRangeKernel(kernel_5, cl::NullRange, cl::NDRange(input_elements), cl::NDRange(local_size), NULL, &prof_event);
-		//		queue.enqueueReadBuffer(buffer_F, CL_TRUE, 0, workGroups, &F[0]);
-		//		std::cout << "F.size = " << F.size() << std::endl;
-
-		//		// resize D to the number of workgroups
-		//		F.resize(nr_groups);
-
-		//		// pad the vector with 0s if the size of the array isn't a multiple of local_size
-		//		// these zeros won't effect the final averaging sum
-		//		b_padding = F.size() % local_size;
-		//		if (b_padding) {
-		//			//create an extra vector with neutral values
-		//			std::vector<mytype> F_ext((local_size - b_padding), 0);
-		//			//append that extra vector to D
-		//			F.insert(F.end(), F_ext.begin(), F_ext.end());
-		//		}
-
-		//		// resize nr_groups so the next iteration will keep lowering the size of C with each C.resize()
-		//		nr_groups = F.size() / local_size;
-		//		// Update minElements with the new size so the loop won't go on indefinitely 
-		//		minElements = F.size();
-		//		// Finally copy the final vector F into A - ready to be sent to the device in the next iteration
-		//		A = F;
-		//	}
-
-		//std::cout << "F after loop = " << F << std::endl;
-
-		//// store the first value in finalStdDev, i will start at 1 not 0 in the loop below as theres no point comparing it to itself
-		//finalStdDev = F[0];
-
-		//// serially loop through the final x values for the min, where x = local_size
-		//for (int i = 1; i < F.size(); i++) {
-		//	finalStdDev = finalStdDev + F[i];
-		//}
-		//std::cout << "Sum = " << finalStdDev << std::endl;
-
-		//finalStdDev = (finalStdDev / (input_elements - 1));
-		//std::cout << "Variance = " << finalStdDev << std::endl;
-
-		//finalStdDev = sqrt(finalStdDev);
-		//std::cout << "Standard Deviation = " << finalStdDev << std::endl;
-		//// trying for 5.92
+		std::cout << "Average Kernel - execution time [Microseconds]: " << kernalTime / 1000 << std::endl;
+		std::cout << "Avg = " << finalAvg << "\n" << std::endl;
 
 		// Standard deviation														 
 		cl::Kernel kernel_4 = cl::Kernel(program, "std_dev");
@@ -380,7 +321,9 @@ int main(int argc, char **argv) {
 		// reset some variables needed for the next kernal
 		nr_groups = input_elements / local_size;
 		minElements = output_size;
-		A = tempA;
+		A = originA;
+		kernalTime = 0;
+
 
 				// std dev
 				while (minElements > local_size) {
@@ -398,6 +341,13 @@ int main(int argc, char **argv) {
 					//printf("C size = %d \n", C.size());
 					//workGroups = nr_groups * sizeof(mytype);
 					A = E;
+
+					// Add the kernal execution time for the last kernal execution to the total time so far
+					kernalTime = kernalTime + (prof_event.getProfilingInfo<CL_PROFILING_COMMAND_END>() -
+						prof_event.getProfilingInfo<CL_PROFILING_COMMAND_START>());
+					// get memory transfer time for each - as this is retruned in a string will need to get substring to add up each seperately
+					memoryTransferTime = GetFullProfilingInfo(prof_event, ProfilingResolution::PROF_US);
+					std::cout << memoryTransferTime << std::endl;
 				}
 				//std::cout << "E after loop = " << E << std::endl;
 
@@ -411,6 +361,7 @@ int main(int argc, char **argv) {
 				//}
 
 				// reset some variables needed for the next kernal
+				// but dont reset kernal time
 				nr_groups = input_elements / local_size;
 				minElements = output_size;
 				A = E;
@@ -446,8 +397,14 @@ int main(int argc, char **argv) {
 					minElements = F.size();
 					// Finally copy the final vector D into A - ready to be sent to the device in the next iteration
 					A = F;
-				}
 
+					// Add the kernal execution time for the last kernal execution to the total time so far
+					kernalTime = kernalTime + (prof_event.getProfilingInfo<CL_PROFILING_COMMAND_END>() -
+						prof_event.getProfilingInfo<CL_PROFILING_COMMAND_START>());
+					// get memory transfer time for each - as this is retruned in a string will need to get substring to add up each seperately
+					memoryTransferTime = GetFullProfilingInfo(prof_event, ProfilingResolution::PROF_US);
+					std::cout << memoryTransferTime << std::endl;
+				}
 				// store the average in finalAvg
 				finalAvg = F[0];
 
@@ -457,22 +414,18 @@ int main(int argc, char **argv) {
 					finalAvg = finalAvg + F[i];
 				}
 
-				// divide the final sum by the original number of input elements to get the final average
-				// important to use origin_input_elements not input_elements so the padding won't effect the result
-				std::cout << "Sum = " << finalAvg << std::endl;
-				
+				// divide the final sum by the original number of input elements -1 to get the variance
+				// std::cout << "Sum = " << finalAvg << std::endl;				
 				finalStdDev = (finalAvg / (input_elements - 1));
-				std::cout << "Variance = " << finalStdDev << std::endl;
+				//std::cout << "Variance = " << finalStdDev << std::endl;
 
 				finalStdDev = sqrt(finalStdDev);
+
+				std::cout << "Standard deviation Kernel - execution time [Microseconds]: " << kernalTime /1000 << std::endl;
 				std::cout << "Standard Deviation = " << finalStdDev << std::endl;
 
+				//std::cout << GetFullProfilingInfo(prof_event, ProfilingResolution::PROF_US) << "\n" << endl;
 
-
-
-		std::cout << "\nKernel execution time [ns]:" << prof_event.getProfilingInfo<CL_PROFILING_COMMAND_END>() -
-			prof_event.getProfilingInfo<CL_PROFILING_COMMAND_START>() << std::endl;
-		std::cout << GetFullProfilingInfo(prof_event, ProfilingResolution::PROF_US) << endl;
 	}
 	catch (cl::Error err) {
 		std::cerr << "ERROR: " << err.what() << ", " << getErrorString(err.err()) << std::endl;
